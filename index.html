@@ -1,0 +1,14 @@
+<html>
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+		var socket = io();
+		socket.on('bbb', function(msg) {
+			console.log('server sent me ' + msg);
+		});
+	</script>
+	<body>
+		<button onclick="socket.emit('aaa', 'hello')">
+			send hello
+		</button>
+	</body>
+</html>
