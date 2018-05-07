@@ -2,13 +2,68 @@
 	<script src="/socket.io/socket.io.js"></script>
 	<script>
 		var socket = io();
-		socket.on('bbb', function(msg) {
+		socket.on('start', function(msg){
+			document.getElementById('ready').style.display = 'none';
+			document.getElementById('charge').style.display = 'inline';
+			document.getElementById('hit').style.display = 'inline';
+			document.getElementById('defend').style.display = 'inline';
+			console.log('server sent me ' + msg);
+		});
+
+		socket.on('back_to_ready', function(msg){
+			document.getElementById('ready').style.display = 'inline';
+			document.getElementById('charge').style.display = 'none';
+			document.getElementById('hit').style.display = 'none';
+			document.getElementById('defend').style.display = 'none';
+			document.getElementById('end').style.display = 'none';
+			document.getElementById('continue').style.display = 'none';
+			document.getElementById('remaining_charge').style.display = 'none';
+			console.log('server sent me ' + msg);
+		});
+
+		socket.on('enable_hit', function(msg){
+			document.getElementById('hit').disabled = false;
+			console.log('server sent me ' + msg);
+		});
+
+		socket.on('disable_hit', function(msg){
+			document.getElementById('hit').disabled = true;
+			console.log('server sent me ' + msg);
+		});
+
+		socket.on('end', function(msg){
+			document.getElementById('charge').style.display = 'none';
+			document.getElementById('hit').style.display = 'none';
+			document.getElementById('defend').style.display = 'none';
+			document.getElementById('continue').style.display = 'none';
+			document.getElementById('end').style.display = 'inline';
+			document.getElementById('end').innerHTML = msg;
+			console.log('server sent me ' + msg);
+		});
+
+		socket.on('continue', function(msg, remaining_charge){
+			document.getElementById('continue').style.display = 'inline';
+			document.getElementById('continue').innerHTML = msg;
+			document.getElementById('remaining_charge').style.display = 'inline';
+			document.getElementById('remaining_charge').innerHTML = " Remaining charge: " + remaining_charge + "!";
 			console.log('server sent me ' + msg);
 		});
 	</script>
 	<body>
-		<button onclick="socket.emit('aaa', 'hello')">
-			send hello
+		<button id="ready" onclick="socket.emit('ready', 'ready')">
+			Ready
 		</button>
+		<button id="charge" onclick="socket.emit('select', 'charge')" style="display:none;">
+			Charge
+		</button>
+		<button id="hit" onclick="socket.emit('select', 'hit')" style="display:none;" disabled>
+			Hit
+		</button>
+		<button id="defend" onclick="socket.emit('select', 'defend')" style="display:none;">
+			Defend
+		</button>
+		<p id="remaining_charge" style="display:none;"></p>
+		<p id="end" style="display:none;"></p>
+		<p id="continue" style="display:none;"></p>
 	</body>
 </html>
