@@ -4,9 +4,11 @@
 		var socket = io();
 		socket.on('start', function(msg){
 			document.getElementById('ready').style.display = 'none';
+			document.getElementById('readyMsg').style.display = 'none';
 			document.getElementById('charge').style.display = 'inline';
 			document.getElementById('hit').style.display = 'inline';
 			document.getElementById('defend').style.display = 'inline';
+
 			console.log('server sent me ' + msg);
 		});
 
@@ -48,9 +50,20 @@
 			document.getElementById('remaining_charge').innerHTML = " Remaining charge: " + remaining_charge + "!";
 			console.log('server sent me ' + msg);
 		});
+
+		function ready(){
+			socket.emit('ready', document.getElementById("roomname").value);
+		}
+
+		function readyMsg(){
+			document.getElementById("readyMsg").innerHTML = "wait for the other roomplayer get ready!";
+			document.getElementById('readyMsg').style.display = 'inline';
+		}
 	</script>
 	<body>
-		<button id="ready" onclick="socket.emit('ready', 'ready')">
+		<input type="text" id="roomname" name="Room name">
+		<button id="ready" onclick="ready(); readyMsg()">
+			<!-- socket.emit('ready', document.getElementById("roomname").value) -->
 			Ready
 		</button>
 		<button id="charge" onclick="socket.emit('select', 'charge')" style="display:none;">
@@ -65,5 +78,6 @@
 		<p id="remaining_charge" style="display:none;"></p>
 		<p id="end" style="display:none;"></p>
 		<p id="continue" style="display:none;"></p>
+		<p id="readyMsg" style="display:none;"></p>
 	</body>
 </html>

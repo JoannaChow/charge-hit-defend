@@ -1,9 +1,59 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-var readylist = ["", ""];
-var select = ["",""];
-var chargelist = [0,0];
+// var user1 = {id:"", selection:"", charge:0};
+// var user2 = {id:"", selection:"", charge:0};
+var users = {};
+
+function isInArray(id) {
+	if(users[id] == null) return false;
+	else return true;
+};
+
+function addInArray(id, roomname) {
+	users[id] = {
+		Roomname: roomname,
+		OpponentId: "",
+		Selection: "",
+		Charge: 0
+	};
+	console.log(users);
+};
+
+function isPairup(roomname){
+	var counter = 0;
+	var player1;
+	var player2;
+	for(key in users) {
+		if(users[key].Roomname == roomname) {
+			counter++;
+			if(counter == 1) player1 = key;
+			else player2 = key;
+		}
+	}
+	if(counter == 2) {
+		users[player1].OpponentId = player2;
+		users[player2].OpponentId = player1;
+		return true;
+	}
+	else return false;
+
+	//the other way to loop an object
+	// const keys = Object.keys(users);
+	// for(let i = 0; i < keys.size(); i++) {
+	// 	console.log(users[key]);
+	// }
+};
+
+function getRoomname(id) {
+	return users[id].Roomname;
+};
+
+function removeUser(id) {
+	delete users[id];
+};
+
+//--------------------------------------------------------------------
 
 app.get('/', function(req, res){
 	res.sendFile(__dirname + '/index.html');
@@ -13,102 +63,94 @@ io.on('connection', function(socket){
 	console.log('a user '+ socket.id+' connected');
 
 	socket.on('disconnect', function(){
-		if(readylist[0] == socket.id){
-			readylist[0] = "";
-			io.to('room').emit('back_to_ready', 'back to getting ready');
-		} else if(readylist[1] == socket.id){
-			readylist[1] = "";
-			io.to('room').emit('back_to_ready', 'back to getting ready');
+		if(isInArray(socket.id)) {
+			var roomname = users[socket.id].Roomname;
+			removeUser(socket.id);
+			io.to(roomname).emit('back_to_ready', 'back to getting ready');
+			console.log('user: '+ socket.id +' disconnected');
 		}
-		chargelist = [0,0];
-		console.log('user: '+ socket.id +' disconnected');
-		console.log("readylist: " + readylist);
+		else console.log('user: '+ socket.id +' didnt disconnected');
 	});
 
-	socket.on('ready', function(msg){
-		if((readylist[0] == "" && readylist[1] != socket.id) || 
-			(readylist[1] == "" && readylist[0] != socket.id)){
-			socket.join('room', function(){
-				if(readylist[0] == ""){
-					readylist[0] = socket.id;
-				}else readylist[1] = socket.id;
-				console.log(socket.id +' is ' + msg);
-				console.log("readylist: " + readylist);
-
-				if(readylist[0] != "" && readylist[1] != ""){
-					io.to('room').emit('start', 'getting start');
+	socket.on('ready', function(roomname){
+		if(!isInArray(socket.id)){
+			//add user into the array
+			addInArray(socket.id, roomname);
+			console.log('user: '+ socket.id +' get in room: ' + roomname);
+			if(isInArray(socket.id)) console.log('user: '+ socket.id +' is in the array!');
+			if(!isInArray(socket.id)) console.log('user: '+ socket.id +' is not in the array!');
+			socket.join(roomname, function(){
+				//start game
+				if(isPairup(roomname)){
+					io.to(roomname).emit('start', 'getting start');
 				}
 			});
 		}
 	});
 
 	socket.on('select', function(msg){
-		if(socket.id == readylist[0]){
-			select[0] = msg;
-		}else select[1] = msg;
+		users[socket.id].selection = msg;
+		var player2 = users[socket.id].OpponentId;
 
-		if(select[0] != "" && select[1] != ""){
-			// if(chargelist[0] > 0) io.to(readylist[0]).emit('enable_hit', 'disable to hit');
-			// if(chargelist[1] > 0) io.to(readylist[1]).emit('enable_hit', 'disable to hit');
-			console.log("readylist: " + readylist);
-			if(select[0] == "charge"){
-				chargelist[0]++;
-				if(chargelist[0] >= 1) io.to(readylist[0]).emit('enable_hit', 'enable to hit');
+		if(users[socket.id].selection != "" && users[player2].selection != ""){
+			if(users[socket.id].selection == "charge"){
+				users[socket.id].charge++;
+				if(users[socket.id].charge >= 1) io.to(socket.id).emit('enable_hit', 'enable to hit');
 
-				if(select[1] == "hit"){
-					chargelist[1]--;
-					if(chargelist[1] == 0) io.to(readylist[1]).emit('disable_hit', 'disable to hit');
-					io.to(readylist[0]).emit('end', 'you lose');
-					io.to(readylist[1]).emit('end', 'you win');
+				if(users[player2].selection == "hit"){
+					users[player2].charge--;
+					if(users[player2].charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
+					io.to(socket.id).emit('end', 'you lose');
+					io.to(player2).emit('end', 'you win');
 				}
-				else{ // select[1] == "charge" or "defend"
-					if(select[1] == "charge"){
-						chargelist[1]++;
-						if(chargelist[1] >= 1) io.to(readylist[1]).emit('enable_hit', 'enable to hit');
+				else{ // users[player2].selection == "charge" or "defend"
+					if(users[player2].selection == "charge"){
+						users[player2].charge++;
+						if(users[player2].charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					}
-					io.to(readylist[0]).emit('continue', 'you are safe', chargelist[0]);
-					io.to(readylist[1]).emit('continue', 'you are safe', chargelist[1]);
+					io.to(socket.id).emit('continue', 'you are safe', users[socket.id].charge);
+					io.to(player2).emit('continue', 'you are safe', users[player2].charge);
 				}
 			}
-			else if(select[0] == "hit"){
-				chargelist[0]--;
-				if(chargelist[0] == 0) io.to(readylist[0]).emit('disable_hit', 'enable to hit');
+			else if(users[socket.id].selection == "hit"){
+				users[socket.id].charge--;
+				if(users[socket.id].charge == 0) io.to(socket.id).emit('disable_hit', 'enable to hit');
 				
-				if(select[1] == "charge"){
-					chargelist[1]++;
-					if(chargelist[1] >= 1) io.to(readylist[1]).emit('enable_hit', 'enable to hit');
-					io.to(readylist[0]).emit('end', 'you win');
-					io.to(readylist[1]).emit('end', 'you lose');
+				if(users[player2].selection == "charge"){
+					users[player2].charge++;
+					if(users[player2].charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
+					io.to(socket.id).emit('end', 'you win');
+					io.to(player2).emit('end', 'you lose');
 				}
-				else{ // select[1] == "hit" or "defend"
-					io.to(readylist[0]).emit('continue', 'you are even', chargelist[0]);
-					if(select[1] == "hit"){
-						chargelist[1]--;
-						if(chargelist[1] == 0) io.to(readylist[1]).emit('disable_hit', 'disable to hit');
-						io.to(readylist[1]).emit('continue', 'you are even', chargelist[1]);
+				else{ // users[player2].selection == "hit" or "defend"
+					io.to(socket.id).emit('continue', 'you are even', users[socket.id].charge);
+					if(users[player2].selection == "hit"){
+						users[player2].charge--;
+						if(users[player2].charge == 0) io.to(users[player2].id).emit('disable_hit', 'disable to hit');
+						io.to(player2).emit('continue', 'you are even', users[player2].charge);
 					}
-					if(select[1] == "defend")io.to(readylist[1]).emit('continue', 'you are safe', chargelist[1]);
+					if(users[player2].selection == "defend")io.to(player2).emit('continue', 'you are safe', users[player2].charge);
 				}
 			}
-			else{ // select[0] == "defend"
-				io.to(readylist[0]).emit('continue', 'you are safe', chargelist[0]);
-				if(select[1] == "hit"){
-					chargelist[1]--;
-					if(chargelist[1] == 0) io.to(readylist[1]).emit('disable_hit', 'disable to hit');
-					io.to(readylist[1]).emit('continue', 'you are even', chargelist[1]);
+			else{ // users[socket.id].selection == "defend"
+				io.to(socket.id).emit('continue', 'you are safe', users[socket.id].charge);
+				if(users[player2].selection == "hit"){
+					users[player2].charge--;
+					if(users[player2].charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
+					io.to(player2).emit('continue', 'you are even', users[player2].charge);
 				}
 				else{
-					if(select[1] == "charge"){
-						chargelist[1]++;
-						if(chargelist[1] >= 1) io.to(readylist[1]).emit('enable_hit', 'enable to hit');
+					if(users[player2].selection == "charge"){
+						users[player2].charge++;
+						if(users[player2].charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					}
-					io.to(readylist[1]).emit('continue', 'you are safe', chargelist[1]);
+					io.to(player2).emit('continue', 'you are safe', users[player2].charge);
 				}
 			}
 
 			// reset select
-			select[0] = "";
-			select[1] = "";
+			users[socket.id].selection = "";
+			users[player2].selection = "";
 		}
 	});
 });
