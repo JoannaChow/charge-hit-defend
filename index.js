@@ -1,8 +1,6 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-// var user1 = {id:"", selection:"", charge:0};
-// var user2 = {id:"", selection:"", charge:0};
 var users = {};
 
 function isInArray(id) {
@@ -20,7 +18,7 @@ function addInArray(id, roomname) {
 	console.log(users);
 };
 
-function isPairup(roomname){
+function isOccupied(roomname){
 	var counter = 0;
 	var player1;
 	var player2;
@@ -45,12 +43,15 @@ function isPairup(roomname){
 	// }
 };
 
-function getRoomname(id) {
-	return users[id].Roomname;
-};
-
 function removeUser(id) {
 	delete users[id];
+};
+
+function resetUser(id) {
+	users[id].Roomname = "";
+	users[id].OpponentId = "";
+	users[id].Selection = "";
+	users[id].Charge = 0;
 };
 
 //--------------------------------------------------------------------
@@ -64,93 +65,105 @@ io.on('connection', function(socket){
 
 	socket.on('disconnect', function(){
 		if(isInArray(socket.id)) {
-			var roomname = users[socket.id].Roomname;
+			var opponentUser = users[socket.id].OpponentId;
 			removeUser(socket.id);
-			io.to(roomname).emit('back_to_ready', 'back to getting ready');
+			resetUser(opponentUser);
+			io.to(opponentUser).emit('back_to_ready', false);
 			console.log('user: '+ socket.id +' disconnected');
 		}
 		else console.log('user: '+ socket.id +' didnt disconnected');
 	});
 
 	socket.on('ready', function(roomname){
-		if(!isInArray(socket.id)){
-			//add user into the array
-			addInArray(socket.id, roomname);
-			console.log('user: '+ socket.id +' get in room: ' + roomname);
-			if(isInArray(socket.id)) console.log('user: '+ socket.id +' is in the array!');
-			if(!isInArray(socket.id)) console.log('user: '+ socket.id +' is not in the array!');
+		if(!isOccupied(roomname)){
+			if(!isInArray(socket.id)){
+				//add user into the array with the roomname
+				addInArray(socket.id, roomname);
+				console.log('user: '+ socket.id +' get in room: ' + roomname);
+			}
+			else if(users[socket.id].Roomname == ""){
+				//get into new room
+				users[socket.id].Roomname = roomname;
+			}
+
 			socket.join(roomname, function(){
-				//start game
-				if(isPairup(roomname)){
+				//if now there are 2 players in the room, start game
+				if(isOccupied(roomname)){
 					io.to(roomname).emit('start', 'getting start');
 				}
+				else{
+					io.to(socket.id).emit('ready');
+				}
 			});
+		}
+		else{
+			io.to(socket.id).emit('back_to_ready', true);
 		}
 	});
 
 	socket.on('select', function(msg){
-		users[socket.id].selection = msg;
+		users[socket.id].Selection = msg;
 		var player2 = users[socket.id].OpponentId;
 
-		if(users[socket.id].selection != "" && users[player2].selection != ""){
-			if(users[socket.id].selection == "charge"){
-				users[socket.id].charge++;
-				if(users[socket.id].charge >= 1) io.to(socket.id).emit('enable_hit', 'enable to hit');
+		if(users[socket.id].Selection != "" && users[player2].Selection != ""){
+			if(users[socket.id].Selection == "charge"){
+				users[socket.id].Charge++;
+				if(users[socket.id].Charge >= 1) io.to(socket.id).emit('enable_hit', 'enable to hit');
 
-				if(users[player2].selection == "hit"){
-					users[player2].charge--;
-					if(users[player2].charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
+				if(users[player2].Selection == "hit"){
+					users[player2].Charge--;
+					if(users[player2].Charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
 					io.to(socket.id).emit('end', 'you lose');
 					io.to(player2).emit('end', 'you win');
 				}
-				else{ // users[player2].selection == "charge" or "defend"
-					if(users[player2].selection == "charge"){
-						users[player2].charge++;
-						if(users[player2].charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
+				else{ // users[player2].Selection == "charge" or "defend"
+					if(users[player2].Selection == "charge"){
+						users[player2].Charge++;
+						if(users[player2].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					}
-					io.to(socket.id).emit('continue', 'you are safe', users[socket.id].charge);
-					io.to(player2).emit('continue', 'you are safe', users[player2].charge);
+					io.to(socket.id).emit('continue', 'you are safe', users[socket.id].Charge);
+					io.to(player2).emit('continue', 'you are safe', users[player2].Charge);
 				}
 			}
-			else if(users[socket.id].selection == "hit"){
-				users[socket.id].charge--;
-				if(users[socket.id].charge == 0) io.to(socket.id).emit('disable_hit', 'enable to hit');
+			else if(users[socket.id].Selection == "hit"){
+				users[socket.id].Charge--;
+				if(users[socket.id].Charge == 0) io.to(socket.id).emit('disable_hit', 'enable to hit');
 				
-				if(users[player2].selection == "charge"){
-					users[player2].charge++;
-					if(users[player2].charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
+				if(users[player2].Selection == "charge"){
+					users[player2].Charge++;
+					if(users[player2].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					io.to(socket.id).emit('end', 'you win');
 					io.to(player2).emit('end', 'you lose');
 				}
-				else{ // users[player2].selection == "hit" or "defend"
-					io.to(socket.id).emit('continue', 'you are even', users[socket.id].charge);
-					if(users[player2].selection == "hit"){
-						users[player2].charge--;
-						if(users[player2].charge == 0) io.to(users[player2].id).emit('disable_hit', 'disable to hit');
-						io.to(player2).emit('continue', 'you are even', users[player2].charge);
+				else{ // users[player2].Selection == "hit" or "defend"
+					io.to(socket.id).emit('continue', 'you are even', users[socket.id].Charge);
+					if(users[player2].Selection == "hit"){
+						users[player2].Charge--;
+						if(users[player2].Charge == 0) io.to(users[player2].id).emit('disable_hit', 'disable to hit');
+						io.to(player2).emit('continue', 'you are even', users[player2].Charge);
 					}
-					if(users[player2].selection == "defend")io.to(player2).emit('continue', 'you are safe', users[player2].charge);
+					if(users[player2].Selection == "defend")io.to(player2).emit('continue', 'you are safe', users[player2].Charge);
 				}
 			}
-			else{ // users[socket.id].selection == "defend"
-				io.to(socket.id).emit('continue', 'you are safe', users[socket.id].charge);
-				if(users[player2].selection == "hit"){
-					users[player2].charge--;
-					if(users[player2].charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
-					io.to(player2).emit('continue', 'you are even', users[player2].charge);
+			else{ // users[socket.id].Selection == "defend"
+				io.to(socket.id).emit('continue', 'you are safe', users[socket.id].Charge);
+				if(users[player2].Selection == "hit"){
+					users[player2].Charge--;
+					if(users[player2].Charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
+					io.to(player2).emit('continue', 'you are even', users[player2].Charge);
 				}
 				else{
-					if(users[player2].selection == "charge"){
-						users[player2].charge++;
-						if(users[player2].charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
+					if(users[player2].Selection == "charge"){
+						users[player2].Charge++;
+						if(users[player2].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					}
-					io.to(player2).emit('continue', 'you are safe', users[player2].charge);
+					io.to(player2).emit('continue', 'you are safe', users[player2].Charge);
 				}
 			}
 
 			// reset select
-			users[socket.id].selection = "";
-			users[player2].selection = "";
+			users[socket.id].Selection = "";
+			users[player2].Selection = "";
 		}
 	});
 });

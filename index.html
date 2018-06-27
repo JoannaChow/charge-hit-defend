@@ -4,33 +4,45 @@
 		var socket = io();
 		socket.on('start', function(msg){
 			document.getElementById('ready').style.display = 'none';
+			document.getElementById('roomOccupied').style.display = 'none';
 			document.getElementById('readyMsg').style.display = 'none';
+			document.getElementById('roomname').style.display = 'none';
+
 			document.getElementById('charge').style.display = 'inline';
 			document.getElementById('hit').style.display = 'inline';
 			document.getElementById('defend').style.display = 'inline';
 
-			console.log('server sent me ' + msg);
+			// console.log('server sent me ' + msg);
 		});
 
-		socket.on('back_to_ready', function(msg){
-			document.getElementById('ready').style.display = 'inline';
+		socket.on('back_to_ready', function(isRoomnameUsed){
 			document.getElementById('charge').style.display = 'none';
 			document.getElementById('hit').style.display = 'none';
 			document.getElementById('defend').style.display = 'none';
 			document.getElementById('end').style.display = 'none';
 			document.getElementById('continue').style.display = 'none';
 			document.getElementById('remaining_charge').style.display = 'none';
-			console.log('server sent me ' + msg);
+			document.getElementById('readyMsg').style.display = 'none';
+			document.getElementById("roomname").value = '';
+			document.getElementById('roomOccupied').style.display = 'none';
+			
+			document.getElementById('ready').style.display = 'inline';
+			document.getElementById('roomname').style.display = 'inline';
+			if(isRoomnameUsed){
+				document.getElementById('roomOccupied').innerHTML = 'the roomname has been used!';
+				document.getElementById('roomOccupied').style.display = 'inline';
+			}
+			// console.log('server sent me ' + msg);
 		});
 
 		socket.on('enable_hit', function(msg){
 			document.getElementById('hit').disabled = false;
-			console.log('server sent me ' + msg);
+			// console.log('server sent me ' + msg);
 		});
 
 		socket.on('disable_hit', function(msg){
 			document.getElementById('hit').disabled = true;
-			console.log('server sent me ' + msg);
+			// console.log('server sent me ' + msg);
 		});
 
 		socket.on('end', function(msg){
@@ -38,9 +50,10 @@
 			document.getElementById('hit').style.display = 'none';
 			document.getElementById('defend').style.display = 'none';
 			document.getElementById('continue').style.display = 'none';
+
 			document.getElementById('end').style.display = 'inline';
 			document.getElementById('end').innerHTML = msg;
-			console.log('server sent me ' + msg);
+			// console.log('server sent me ' + msg);
 		});
 
 		socket.on('continue', function(msg, remaining_charge){
@@ -48,21 +61,24 @@
 			document.getElementById('continue').innerHTML = msg;
 			document.getElementById('remaining_charge').style.display = 'inline';
 			document.getElementById('remaining_charge').innerHTML = " Remaining charge: " + remaining_charge + "!";
-			console.log('server sent me ' + msg);
+			// console.log('server sent me ' + msg);
+		});
+
+		socket.on('ready', function(){
+			document.getElementById('roomOccupied').style.display = 'none';
+
+			document.getElementById('readyMsg').innerHTML = "wait for the other roomplayer get ready!";
+			document.getElementById('readyMsg').style.display = 'inline';
 		});
 
 		function ready(){
 			socket.emit('ready', document.getElementById("roomname").value);
 		}
 
-		function readyMsg(){
-			document.getElementById("readyMsg").innerHTML = "wait for the other roomplayer get ready!";
-			document.getElementById('readyMsg').style.display = 'inline';
-		}
 	</script>
 	<body>
 		<input type="text" id="roomname" name="Room name">
-		<button id="ready" onclick="ready(); readyMsg()">
+		<button id="ready" onclick="ready()">
 			<!-- socket.emit('ready', document.getElementById("roomname").value) -->
 			Ready
 		</button>
@@ -79,5 +95,6 @@
 		<p id="end" style="display:none;"></p>
 		<p id="continue" style="display:none;"></p>
 		<p id="readyMsg" style="display:none;"></p>
+		<p id="roomOccupied" style="display:none;"></p>
 	</body>
 </html>
