@@ -15,7 +15,7 @@
 			// console.log('server sent me ' + msg);
 		});
 
-		socket.on('back_to_ready', function(isRoomnameUsed){
+		socket.on('back_to_ready', function(isRoomnameUsed, msg){
 			document.getElementById('charge').style.display = 'none';
 			document.getElementById('hit').style.display = 'none';
 			document.getElementById('defend').style.display = 'none';
@@ -29,7 +29,8 @@
 			document.getElementById('ready').style.display = 'inline';
 			document.getElementById('roomname').style.display = 'inline';
 			if(isRoomnameUsed){
-				document.getElementById('roomOccupied').innerHTML = 'the roomname has been used!';
+				if(msg != "") document.getElementById('roomOccupied').innerHTML = msg;
+				else document.getElementById('roomOccupied').innerHTML = 'the roomname has been used!';
 				document.getElementById('roomOccupied').style.display = 'inline';
 			}
 			// console.log('server sent me ' + msg);

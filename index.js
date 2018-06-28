@@ -68,14 +68,14 @@ io.on('connection', function(socket){
 			var opponentUser = users[socket.id].OpponentId;
 			removeUser(socket.id);
 			resetUser(opponentUser);
-			io.to(opponentUser).emit('back_to_ready', false);
+			io.to(opponentUser).emit('back_to_ready', false, "");
 			console.log('user: '+ socket.id +' disconnected');
 		}
 		else console.log('user: '+ socket.id +' didnt disconnected');
 	});
 
 	socket.on('ready', function(roomname){
-		if(!isOccupied(roomname)){
+		if(roomname != "" && !isOccupied(roomname)){
 			if(!isInArray(socket.id)){
 				//add user into the array with the roomname
 				addInArray(socket.id, roomname);
@@ -97,7 +97,8 @@ io.on('connection', function(socket){
 			});
 		}
 		else{
-			io.to(socket.id).emit('back_to_ready', true);
+			if(roomname == "") io.to(socket.id).emit('back_to_ready', true, "Roomname cannot be empty!");
+			else io.to(socket.id).emit('back_to_ready', true, "");
 		}
 	});
 
