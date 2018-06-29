@@ -106,6 +106,8 @@ io.on('connection', function(socket){
 		users[socket.id].Selection = msg;
 		var player2 = users[socket.id].OpponentId;
 
+		console.log(users);
+		//game logic
 		if(users[socket.id].Selection != "" && users[player2].Selection != ""){
 			if(users[socket.id].Selection == "charge"){
 				users[socket.id].Charge++;
@@ -122,8 +124,8 @@ io.on('connection', function(socket){
 						users[player2].Charge++;
 						if(users[player2].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					}
-					io.to(socket.id).emit('continue', 'you are safe', users[socket.id].Charge);
-					io.to(player2).emit('continue', 'you are safe', users[player2].Charge);
+					io.to(socket.id).emit('continue', 'you are safe\n', users[socket.id].Charge);
+					io.to(player2).emit('continue', 'you are safe\n', users[player2].Charge);
 				}
 			}
 			else if(users[socket.id].Selection == "hit"){
@@ -137,28 +139,28 @@ io.on('connection', function(socket){
 					io.to(player2).emit('end', 'you lose');
 				}
 				else{ // users[player2].Selection == "hit" or "defend"
-					io.to(socket.id).emit('continue', 'you are even', users[socket.id].Charge);
+					io.to(socket.id).emit('continue', 'you are even\n', users[socket.id].Charge);
 					if(users[player2].Selection == "hit"){
 						users[player2].Charge--;
 						if(users[player2].Charge == 0) io.to(users[player2].id).emit('disable_hit', 'disable to hit');
-						io.to(player2).emit('continue', 'you are even', users[player2].Charge);
+						io.to(player2).emit('continue', 'you are even\n', users[player2].Charge);
 					}
-					if(users[player2].Selection == "defend")io.to(player2).emit('continue', 'you are safe', users[player2].Charge);
+					if(users[player2].Selection == "defend")io.to(player2).emit('continue', 'you are safe\n', users[player2].Charge);
 				}
 			}
 			else{ // users[socket.id].Selection == "defend"
-				io.to(socket.id).emit('continue', 'you are safe', users[socket.id].Charge);
+				io.to(socket.id).emit('continue', 'you are safe\n', users[socket.id].Charge);
 				if(users[player2].Selection == "hit"){
 					users[player2].Charge--;
 					if(users[player2].Charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
-					io.to(player2).emit('continue', 'you are even', users[player2].Charge);
+					io.to(player2).emit('continue', 'you are even\n', users[player2].Charge);
 				}
 				else{
 					if(users[player2].Selection == "charge"){
 						users[player2].Charge++;
 						if(users[player2].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					}
-					io.to(player2).emit('continue', 'you are safe', users[player2].Charge);
+					io.to(player2).emit('continue', 'you are safe\n', users[player2].Charge);
 				}
 			}
 
