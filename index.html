@@ -15,7 +15,10 @@
 			document.getElementById('defend').style.display = 'inline';
 			document.getElementById('countdown').style.display = 'inline';
 <<<<<<< HEAD
+<<<<<<< HEAD
 			// console.log('server sent me ' + msg);
+=======
+
 =======
 
 >>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
@@ -37,11 +40,14 @@
 			document.getElementById('ready').style.display = 'inline';
 			document.getElementById('roomname').style.display = 'inline';
 <<<<<<< HEAD
+<<<<<<< HEAD
 			
 			document.getElementById('roomOccupied').innerHTML = msg;
 			document.getElementById('roomOccupied').style.display = 'inline';
 			// console.log('server sent me ' + msg);
 =======
+=======
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 
 			if(isRoomnameUsed){
 				document.getElementById('roomOccupied').style.display = 'inline';
@@ -50,6 +56,9 @@
 				else document.getElementById('roomOccupied').innerHTML = 'the roomname has been used!\n';
 				
 			}
+<<<<<<< HEAD
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
+=======
 >>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 		});
 
@@ -76,14 +85,20 @@
 			document.getElementById('continue').style.display = 'inline';
 			document.getElementById('remaining_charge').style.display = 'inline';
 <<<<<<< HEAD
+<<<<<<< HEAD
 			document.getElementById('remaining_charge').innerHTML = " Remaining charge: " + remaining_charge + "!";
 			// console.log('server sent me ' + msg);
 =======
+=======
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 			document.getElementById('countdown').style.display = 'inline';
 
 			document.getElementById('continue').innerHTML = msg;
 			document.getElementById('remaining_charge').innerHTML = " Remaining charge: " + remaining_charge + "!\n";
 
+<<<<<<< HEAD
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
+=======
 >>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 			countdown();
 		});
@@ -103,7 +118,11 @@
 			var counter = 5;
 			countdownInterval = setInterval(function(){
 <<<<<<< HEAD
+<<<<<<< HEAD
 				document.getElementById("countdown").innerHTML = "Timer: " + counter + "! Select next step!";
+=======
+				document.getElementById('countdown').innerHTML = "Timer: " + counter + "!\n Please select next step!\n";
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 =======
 				document.getElementById('countdown').innerHTML = "Timer: " + counter + "!\n Please select next step!\n";
 >>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
@@ -113,8 +132,11 @@
 					socket.emit('select', 'charge');
 				}
 <<<<<<< HEAD
+<<<<<<< HEAD
 			}, 1000);
 =======
+=======
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 			});
 		}
 
@@ -123,6 +145,9 @@
 			document.getElementById('countdown').innerHTML = "";
 			document.getElementById('countdown').style.display = 'none';
 			socket.emit('select', selection);
+<<<<<<< HEAD
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
+=======
 >>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 		}
 	</script>
@@ -132,6 +157,7 @@
 			Ready
 		</button>
 <<<<<<< HEAD
+<<<<<<< HEAD
 		<button id="charge" onclick="clearInterval(countdownInterval); socket.emit('select', 'charge')" style="display:none;">
 			Charge
 		</button>
@@ -140,6 +166,8 @@
 		</button>
 		<button id="defend" onclick="clearInterval(countdownInterval); socket.emit('select', 'defend')" style="display:none;">
 =======
+=======
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 		<button id="charge" onclick="select('charge')" style="display:none;">
 			Charge
 		</button>
@@ -147,6 +175,9 @@
 			Hit
 		</button>
 		<button id="defend" onclick="select('defend')" style="display:none;">
+<<<<<<< HEAD
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
+=======
 >>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 			Defend
 		</button>
