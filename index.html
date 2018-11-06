@@ -2,6 +2,8 @@
 	<script src="/socket.io/socket.io.js"></script>
 	<script>
 		var socket = io();
+		var countdownInterval;
+
 		socket.on('start', function(msg){
 			document.getElementById('ready').style.display = 'none';
 			document.getElementById('roomOccupied').style.display = 'none';
@@ -11,11 +13,16 @@
 			document.getElementById('charge').style.display = 'inline';
 			document.getElementById('hit').style.display = 'inline';
 			document.getElementById('defend').style.display = 'inline';
-
+			document.getElementById('countdown').style.display = 'inline';
+<<<<<<< HEAD
 			// console.log('server sent me ' + msg);
+=======
+
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
+			countdown();
 		});
 
-		socket.on('back_to_ready', function(isRoomnameUsed, msg){
+		socket.on('back_to_ready', function(msg){
 			document.getElementById('charge').style.display = 'none';
 			document.getElementById('hit').style.display = 'none';
 			document.getElementById('defend').style.display = 'none';
@@ -25,25 +32,33 @@
 			document.getElementById('readyMsg').style.display = 'none';
 			document.getElementById("roomname").value = '';
 			document.getElementById('roomOccupied').style.display = 'none';
+			document.getElementById('countdown').style.display = 'none';
 			
 			document.getElementById('ready').style.display = 'inline';
 			document.getElementById('roomname').style.display = 'inline';
-			if(isRoomnameUsed){
-				if(msg != "") document.getElementById('roomOccupied').innerHTML = msg;
-				else document.getElementById('roomOccupied').innerHTML = 'the roomname has been used!';
-				document.getElementById('roomOccupied').style.display = 'inline';
-			}
+<<<<<<< HEAD
+			
+			document.getElementById('roomOccupied').innerHTML = msg;
+			document.getElementById('roomOccupied').style.display = 'inline';
 			// console.log('server sent me ' + msg);
+=======
+
+			if(isRoomnameUsed){
+				document.getElementById('roomOccupied').style.display = 'inline';
+
+				if(msg != "") document.getElementById('roomOccupied').innerHTML = msg;
+				else document.getElementById('roomOccupied').innerHTML = 'the roomname has been used!\n';
+				
+			}
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 		});
 
 		socket.on('enable_hit', function(msg){
 			document.getElementById('hit').disabled = false;
-			// console.log('server sent me ' + msg);
 		});
 
 		socket.on('disable_hit', function(msg){
 			document.getElementById('hit').disabled = true;
-			// console.log('server sent me ' + msg);
 		});
 
 		socket.on('end', function(msg){
@@ -51,45 +66,88 @@
 			document.getElementById('hit').style.display = 'none';
 			document.getElementById('defend').style.display = 'none';
 			document.getElementById('continue').style.display = 'none';
+			document.getElementById('countdown').style.display = 'none';
 
 			document.getElementById('end').style.display = 'inline';
 			document.getElementById('end').innerHTML = msg;
-			// console.log('server sent me ' + msg);
 		});
 
 		socket.on('continue', function(msg, remaining_charge){
 			document.getElementById('continue').style.display = 'inline';
-			document.getElementById('continue').innerHTML = msg;
 			document.getElementById('remaining_charge').style.display = 'inline';
+<<<<<<< HEAD
 			document.getElementById('remaining_charge').innerHTML = " Remaining charge: " + remaining_charge + "!";
 			// console.log('server sent me ' + msg);
+=======
+			document.getElementById('countdown').style.display = 'inline';
+
+			document.getElementById('continue').innerHTML = msg;
+			document.getElementById('remaining_charge').innerHTML = " Remaining charge: " + remaining_charge + "!\n";
+
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
+			countdown();
 		});
 
 		socket.on('ready', function(){
 			document.getElementById('roomOccupied').style.display = 'none';
 
-			document.getElementById('readyMsg').innerHTML = "wait for the other roomplayer get ready!";
 			document.getElementById('readyMsg').style.display = 'inline';
+			document.getElementById('readyMsg').innerHTML = "wait for the other roomplayer get ready!\n";
 		});
 
 		function ready(){
 			socket.emit('ready', document.getElementById("roomname").value);
 		}
 
+		function countdown(){
+			var counter = 5;
+			countdownInterval = setInterval(function(){
+<<<<<<< HEAD
+				document.getElementById("countdown").innerHTML = "Timer: " + counter + "! Select next step!";
+=======
+				document.getElementById('countdown').innerHTML = "Timer: " + counter + "!\n Please select next step!\n";
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
+				counter--;
+				if(counter < 0){
+					clearInterval(countdownInterval);
+					socket.emit('select', 'charge');
+				}
+<<<<<<< HEAD
+			}, 1000);
+=======
+			});
+		}
+
+		function select(selection){
+			clearInterval(countdownInterval);
+			document.getElementById('countdown').innerHTML = "";
+			document.getElementById('countdown').style.display = 'none';
+			socket.emit('select', selection);
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
+		}
 	</script>
 	<body>
 		<input type="text" id="roomname" name="Room name">
 		<button id="ready" onclick="ready()">
-			<!-- socket.emit('ready', document.getElementById("roomname").value) -->
 			Ready
 		</button>
-		<button id="charge" onclick="socket.emit('select', 'charge')" style="display:none;">
+<<<<<<< HEAD
+		<button id="charge" onclick="clearInterval(countdownInterval); socket.emit('select', 'charge')" style="display:none;">
 			Charge
 		</button>
-		<button id="hit" onclick="socket.emit('select', 'hit')" style="display:none;" disabled>
+		<button id="hit" onclick="clearInterval(countdownInterval); socket.emit('select', 'hit')" style="display:none;" disabled>
 			Hit
 		</button>
-		<button id="defend" onclick="socket.emit('select', 'defend')" style="display:none;">
+		<button id="defend" onclick="clearInterval(countdownInterval); socket.emit('select', 'defend')" style="display:none;">
+=======
+		<button id="charge" onclick="select('charge')" style="display:none;">
+			Charge
+		</button>
+		<button id="hit" onclick="select('hit')" style="display:none;" disabled>
+			Hit
+		</button>
+		<button id="defend" onclick="select('defend')" style="display:none;">
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 			Defend
 		</button>
 		<p id="remaining_charge" style="display:none;"></p>
@@ -97,5 +155,6 @@
 		<p id="continue" style="display:none;"></p>
 		<p id="readyMsg" style="display:none;"></p>
 		<p id="roomOccupied" style="display:none;"></p>
+		<p id="countdown" style="display:none;"></p>
 	</body>
 </html>

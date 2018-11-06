@@ -1,57 +1,96 @@
-var app = require('express')();
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
-var users = {};
+const app = require('express')();
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
+const users = [];
+const rooms = [];
 
-function isInArray(id) {
-	if(users[id] == null) return false;
-	else return true;
+
+function findUserIndex(user){
+	return user.Id == this;
 };
 
-function addInArray(id, roomname) {
-	users[id] = {
-		Roomname: roomname,
-		OpponentId: "",
-		Selection: "",
-		Charge: 0
-	};
+function findRoomIndex(room){
+	return room.Roomname == this;
+};
+
+function isNewroom(roomname){
+	if(rooms.findIndex(findRoomIndex, roomname) == -1) return true;
+	return false;
+};
+
+function signIn(id){
+	const newuser = { Id: id, Roomname: "", OpponentId: "", Selection: "", Charge: 0 };
+	users.push(newuser);
 	console.log(users);
 };
 
-function isOccupied(roomname){
-	var counter = 0;
-	var player1;
-	var player2;
-	for(key in users) {
-		if(users[key].Roomname == roomname) {
-			counter++;
-			if(counter == 1) player1 = key;
-			else player2 = key;
+function checkIn(id, roomname){
+	const userIndex = users.findIndex(findUserIndex, id);
+	users[userIndex].Roomname = roomname;
+	if(isNewroom(roomname)){
+		const newroom = {Roomname: roomname, Player1: id, Player2: ""};
+		rooms.push(newroom);
+	}
+	else{
+		const roomIndex = rooms.findIndex(findRoomIndex, roomname);
+		if(rooms[roomIndex].Player1 == ""){
+			rooms[roomIndex].Player1 = id;
+		}
+		else{
+			rooms[roomIndex].Player2 = id;
+		}
+
+		const p1 = rooms[roomIndex].Player1;
+		const p2 = rooms[roomIndex].Player2;
+		const p1Index = users.findIndex(findUserIndex, p1);
+		const p2Index = users.findIndex(findUserIndex, p2);
+		if(p1 != "" && p2 != ""){
+			users[p1Index].OpponentId = p2;
+			users[p2Index].OpponentId = p1;
 		}
 	}
-	if(counter == 2) {
-		users[player1].OpponentId = player2;
-		users[player2].OpponentId = player1;
-		return true;
+	console.log(rooms);
+};
+
+function checkOut(id){
+	const userIndex = users.findIndex(findUserIndex, id);
+	const roomname = users[userIndex].Roomname;
+	users[userIndex].Roomname = "";
+	const roomIndex = rooms.findIndex(findRoomIndex, roomname);
+	if(rooms[roomIndex].Player1 == id){
+		rooms[roomIndex].Player1 = "";
 	}
-	else return false;
-
-	//the other way to loop an object
-	// const keys = Object.keys(users);
-	// for(let i = 0; i < keys.size(); i++) {
-	// 	console.log(users[key]);
-	// }
+	else{
+		rooms[roomIndex].Player2 = "";
+	}
 };
 
-function removeUser(id) {
-	delete users[id];
+function isFull(roomname){
+	const roomIndex = rooms.findIndex(findRoomIndex, roomname);
+	
+	if(roomIndex > -1 && rooms[roomIndex].Player1 != "" && rooms[roomIndex].Player2 != "") return true;
+
+	return false;
 };
 
-function resetUser(id) {
-	users[id].Roomname = "";
-	users[id].OpponentId = "";
-	users[id].Selection = "";
-	users[id].Charge = 0;
+function hasCheckedIn(id){
+	const userIndex = users.findIndex(findUserIndex, id);
+	if(users[userIndex].Roomname == "") return false;
+	return true;
+};
+
+function removeUser(id){	
+	const userIndex = users.findIndex(findUserIndex, id);
+	users.splice(userIndex, 1);
+	console.log(`remove user ${id}`);
+	console.log(users);
+};
+
+function resetUser(id){
+	const userIndex = users.findIndex(findUserIndex, id);
+	users[userIndex].OpponentId = "";
+	users[userIndex].Selection = "";
+	users[userIndex].Charge = 0;
 };
 
 //--------------------------------------------------------------------
@@ -61,51 +100,74 @@ app.get('/', function(req, res){
 });
 
 io.on('connection', function(socket){
+	signIn(socket.id);
 	console.log('a user '+ socket.id+' connected');
 
 	socket.on('disconnect', function(){
-		if(isInArray(socket.id)) {
-			var opponentUser = users[socket.id].OpponentId;
-			removeUser(socket.id);
+		if(hasCheckedIn(socket.id)) {
+			const userIndex = users.findIndex(findUserIndex, id);
+			const opponentUser = users[userIndex].OpponentId;
+			checkOut(socket.id);
 			resetUser(opponentUser);
-			io.to(opponentUser).emit('back_to_ready', false, "");
+			io.to(opponentUser).emit('back_to_ready', "opponent player left, wait for other player");
+			console.log('user: '+ socket.id +' checked out');
+		}
+		else{
+			removeUser(socket.id);
 			console.log('user: '+ socket.id +' disconnected');
 		}
-		else console.log('user: '+ socket.id +' didnt disconnected');
 	});
 
 	socket.on('ready', function(roomname){
-		if(roomname != "" && !isOccupied(roomname)){
-			if(!isInArray(socket.id)){
-				//add user into the array with the roomname
-				addInArray(socket.id, roomname);
+		if(roomname != ""){
+			if(isNewroom(roomname) || !isFull(roomname)){
+				// validated roomname
+				// get in the room
+				checkIn(socket.id, roomname);
 				console.log('user: '+ socket.id +' get in room: ' + roomname);
-			}
-			else if(users[socket.id].Roomname == ""){
-				//get into new room
-				users[socket.id].Roomname = roomname;
-			}
 
-			socket.join(roomname, function(){
-				//if now there are 2 players in the room, start game
-				if(isOccupied(roomname)){
-					io.to(roomname).emit('start', 'getting start');
-				}
-				else{
-					io.to(socket.id).emit('ready');
-				}
-			});
+				socket.join(roomname, function(){
+					if(isFull(roomname)){
+						// 2 players are ready, start game
+						io.to(roomname).emit('start', 'getting start');
+					}
+					else{
+						// wait for another player
+						io.to(socket.id).emit('ready');
+					}
+				});
+			}
+			// the room is occupied
+			io.to(socket.id).emit('back_to_ready', "Roomname is already used by other players.");
 		}
 		else{
-			if(roomname == "") io.to(socket.id).emit('back_to_ready', true, "Roomname cannot be empty!");
-			else io.to(socket.id).emit('back_to_ready', true, "");
+			// roomname is not valid
+			io.to(socket.id).emit('back_to_ready', "Roomname cannot be empty!");
 		}
 	});
 
 	socket.on('select', function(msg){
+<<<<<<< HEAD
+		const p1Index = users.findIndex(findUserIndex, id);
+		users[p1Index].Selection = msg;
+		const player2 = users[p1Index].OpponentId;
+		const p2Index = users.findIndex(findUserIndex, player2);
+		
+		//game logic
+		if(users[p1Index].Selection != "" && users[p2Index].Selection != ""){
+			if(users[p1Index].Selection == "charge"){
+				users[p1Index].Charge++;
+				if(users[p1Index].Charge >= 1) io.to(socket.id).emit('enable_hit', 'enable to hit');
+
+				if(users[p2Index].Selection == "hit"){
+					users[p2Index].Charge--;
+					if(users[p2Index].Charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
+=======
 		users[socket.id].Selection = msg;
 		var player2 = users[socket.id].OpponentId;
 
+		console.log(users);
+		//game logic
 		if(users[socket.id].Selection != "" && users[player2].Selection != ""){
 			if(users[socket.id].Selection == "charge"){
 				users[socket.id].Charge++;
@@ -114,57 +176,86 @@ io.on('connection', function(socket){
 				if(users[player2].Selection == "hit"){
 					users[player2].Charge--;
 					if(users[player2].Charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 					io.to(socket.id).emit('end', 'you lose');
 					io.to(player2).emit('end', 'you win');
 				}
-				else{ // users[player2].Selection == "charge" or "defend"
-					if(users[player2].Selection == "charge"){
-						users[player2].Charge++;
-						if(users[player2].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
+				else{ // users[p2Index].Selection == "charge" or "defend"
+					if(users[p2Index].Selection == "charge"){
+						users[p2Index].Charge++;
+						if(users[p2Index].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					}
-					io.to(socket.id).emit('continue', 'you are safe', users[socket.id].Charge);
-					io.to(player2).emit('continue', 'you are safe', users[player2].Charge);
+<<<<<<< HEAD
+					io.to(socket.id).emit('continue', 'you are safe', users[p1Index].Charge);
+					io.to(player2).emit('continue', 'you are safe', users[p2Index].Charge);
+=======
+					io.to(socket.id).emit('continue', 'you are safe\n', users[socket.id].Charge);
+					io.to(player2).emit('continue', 'you are safe\n', users[player2].Charge);
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 				}
 			}
-			else if(users[socket.id].Selection == "hit"){
-				users[socket.id].Charge--;
-				if(users[socket.id].Charge == 0) io.to(socket.id).emit('disable_hit', 'enable to hit');
+			else if(users[p1Index].Selection == "hit"){
+				users[p1Index].Charge--;
+				if(users[p1Index].Charge == 0) io.to(socket.id).emit('disable_hit', 'enable to hit');
 				
-				if(users[player2].Selection == "charge"){
-					users[player2].Charge++;
-					if(users[player2].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
+				if(users[p2Index].Selection == "charge"){
+					users[p2Index].Charge++;
+					if(users[p2Index].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					io.to(socket.id).emit('end', 'you win');
 					io.to(player2).emit('end', 'you lose');
 				}
+<<<<<<< HEAD
+				else{ // users[p2Index].Selection == "hit" or "defend"
+					io.to(socket.id).emit('continue', 'you are even', users[p1Index].Charge);
+					if(users[p2Index].Selection == "hit"){
+						users[p2Index].Charge--;
+						if(users[p2Index].Charge == 0) io.to(users[p2Index].id).emit('disable_hit', 'disable to hit');
+						io.to(player2).emit('continue', 'you are even', users[p2Index].Charge);
+					}
+					if(users[p2Index].Selection == "defend")io.to(player2).emit('continue', 'you are safe', users[p2Index].Charge);
+				}
+			}
+			else{ // users[p1Index].Selection == "defend"
+				io.to(socket.id).emit('continue', 'you are safe', users[p1Index].Charge);
+				if(users[p2Index].Selection == "hit"){
+					users[p2Index].Charge--;
+					if(users[p2Index].Charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
+					io.to(player2).emit('continue', 'you are even', users[p2Index].Charge);
+=======
 				else{ // users[player2].Selection == "hit" or "defend"
-					io.to(socket.id).emit('continue', 'you are even', users[socket.id].Charge);
+					io.to(socket.id).emit('continue', 'you are even\n', users[socket.id].Charge);
 					if(users[player2].Selection == "hit"){
 						users[player2].Charge--;
 						if(users[player2].Charge == 0) io.to(users[player2].id).emit('disable_hit', 'disable to hit');
-						io.to(player2).emit('continue', 'you are even', users[player2].Charge);
+						io.to(player2).emit('continue', 'you are even\n', users[player2].Charge);
 					}
-					if(users[player2].Selection == "defend")io.to(player2).emit('continue', 'you are safe', users[player2].Charge);
+					if(users[player2].Selection == "defend")io.to(player2).emit('continue', 'you are safe\n', users[player2].Charge);
 				}
 			}
 			else{ // users[socket.id].Selection == "defend"
-				io.to(socket.id).emit('continue', 'you are safe', users[socket.id].Charge);
+				io.to(socket.id).emit('continue', 'you are safe\n', users[socket.id].Charge);
 				if(users[player2].Selection == "hit"){
 					users[player2].Charge--;
 					if(users[player2].Charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
-					io.to(player2).emit('continue', 'you are even', users[player2].Charge);
+					io.to(player2).emit('continue', 'you are even\n', users[player2].Charge);
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 				}
 				else{
-					if(users[player2].Selection == "charge"){
-						users[player2].Charge++;
-						if(users[player2].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
+					if(users[p2Index].Selection == "charge"){
+						users[p2Index].Charge++;
+						if(users[p2Index].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					}
-					io.to(player2).emit('continue', 'you are safe', users[player2].Charge);
+<<<<<<< HEAD
+					io.to(player2).emit('continue', 'you are safe', users[p2Index].Charge);
+=======
+					io.to(player2).emit('continue', 'you are safe\n', users[player2].Charge);
+>>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 				}
 			}
 
 			// reset select
-			users[socket.id].Selection = "";
-			users[player2].Selection = "";
+			users[p1Index].Selection = "";
+			users[p2Index].Selection = "";
 		}
 	});
 });
