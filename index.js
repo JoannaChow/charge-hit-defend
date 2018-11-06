@@ -147,7 +147,6 @@ io.on('connection', function(socket){
 	});
 
 	socket.on('select', function(msg){
-<<<<<<< HEAD
 		const p1Index = users.findIndex(findUserIndex, id);
 		users[p1Index].Selection = msg;
 		const player2 = users[p1Index].OpponentId;
@@ -162,21 +161,6 @@ io.on('connection', function(socket){
 				if(users[p2Index].Selection == "hit"){
 					users[p2Index].Charge--;
 					if(users[p2Index].Charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
-=======
-		users[socket.id].Selection = msg;
-		var player2 = users[socket.id].OpponentId;
-
-		console.log(users);
-		//game logic
-		if(users[socket.id].Selection != "" && users[player2].Selection != ""){
-			if(users[socket.id].Selection == "charge"){
-				users[socket.id].Charge++;
-				if(users[socket.id].Charge >= 1) io.to(socket.id).emit('enable_hit', 'enable to hit');
-
-				if(users[player2].Selection == "hit"){
-					users[player2].Charge--;
-					if(users[player2].Charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
->>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 					io.to(socket.id).emit('end', 'you lose');
 					io.to(player2).emit('end', 'you win');
 				}
@@ -185,18 +169,8 @@ io.on('connection', function(socket){
 						users[p2Index].Charge++;
 						if(users[p2Index].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					}
-<<<<<<< HEAD
-<<<<<<< HEAD
 					io.to(socket.id).emit('continue', 'you are safe', users[p1Index].Charge);
 					io.to(player2).emit('continue', 'you are safe', users[p2Index].Charge);
-=======
-					io.to(socket.id).emit('continue', 'you are safe\n', users[socket.id].Charge);
-					io.to(player2).emit('continue', 'you are safe\n', users[player2].Charge);
->>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
-=======
-					io.to(socket.id).emit('continue', 'you are safe\n', users[socket.id].Charge);
-					io.to(player2).emit('continue', 'you are safe\n', users[player2].Charge);
->>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 				}
 			}
 			else if(users[p1Index].Selection == "hit"){
@@ -209,7 +183,6 @@ io.on('connection', function(socket){
 					io.to(socket.id).emit('end', 'you win');
 					io.to(player2).emit('end', 'you lose');
 				}
-<<<<<<< HEAD
 				else{ // users[p2Index].Selection == "hit" or "defend"
 					io.to(socket.id).emit('continue', 'you are even', users[p1Index].Charge);
 					if(users[p2Index].Selection == "hit"){
@@ -226,42 +199,13 @@ io.on('connection', function(socket){
 					users[p2Index].Charge--;
 					if(users[p2Index].Charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
 					io.to(player2).emit('continue', 'you are even', users[p2Index].Charge);
-=======
-				else{ // users[player2].Selection == "hit" or "defend"
-					io.to(socket.id).emit('continue', 'you are even\n', users[socket.id].Charge);
-					if(users[player2].Selection == "hit"){
-						users[player2].Charge--;
-						if(users[player2].Charge == 0) io.to(users[player2].id).emit('disable_hit', 'disable to hit');
-						io.to(player2).emit('continue', 'you are even\n', users[player2].Charge);
-					}
-					if(users[player2].Selection == "defend")io.to(player2).emit('continue', 'you are safe\n', users[player2].Charge);
-				}
-			}
-			else{ // users[socket.id].Selection == "defend"
-				io.to(socket.id).emit('continue', 'you are safe\n', users[socket.id].Charge);
-				if(users[player2].Selection == "hit"){
-					users[player2].Charge--;
-					if(users[player2].Charge == 0) io.to(player2).emit('disable_hit', 'disable to hit');
-					io.to(player2).emit('continue', 'you are even\n', users[player2].Charge);
-<<<<<<< HEAD
->>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
-=======
->>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 				}
 				else{
 					if(users[p2Index].Selection == "charge"){
 						users[p2Index].Charge++;
 						if(users[p2Index].Charge >= 1) io.to(player2).emit('enable_hit', 'enable to hit');
 					}
-<<<<<<< HEAD
-<<<<<<< HEAD
 					io.to(player2).emit('continue', 'you are safe', users[p2Index].Charge);
-=======
-					io.to(player2).emit('continue', 'you are safe\n', users[player2].Charge);
->>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
-=======
-					io.to(player2).emit('continue', 'you are safe\n', users[player2].Charge);
->>>>>>> 0b2b7f43d72f9a2818789c3b58df47aea28ee2f1
 				}
 			}
 
