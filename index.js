@@ -147,7 +147,7 @@ io.on('connection', function(socket){
 	});
 
 	socket.on('select', function(msg){
-		const p1Index = users.findIndex(findUserIndex, id);
+		const p1Index = users.findIndex(findUserIndex, socket.id);
 		users[p1Index].Selection = msg;
 		const player2 = users[p1Index].OpponentId;
 		const p2Index = users.findIndex(findUserIndex, player2);
