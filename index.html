@@ -10,7 +10,6 @@
 			document.getElementById('leave').style.display = 'none';
 			document.getElementById('playagain').style.display = 'none';
 			document.getElementById('end').style.display = 'none';
-			document.getElementById('remaining_charge').style.display = 'none';
 
 			document.getElementById('enter').style.display = 'inline';
 			document.getElementById('roomname').style.display = 'inline';
@@ -26,7 +25,6 @@
 			document.getElementById('unready').style.display = 'none';
 			document.getElementById('playagain').style.display = 'none';
 			document.getElementById('end').style.display = 'none';
-			document.getElementById('remaining_charge').style.display = 'none';
 
 			document.getElementById('ready').style.display = 'inline';
 			document.getElementById('leave').style.display = 'inline';
@@ -56,24 +54,22 @@
 			countdown();
 		});
 
-		socket.on('enable_hit', function(msg){
+		socket.on('enable_hit', function(){
 			document.getElementById('hit').disabled = false;
 		});
 
-		socket.on('disable_hit', function(msg){
+		socket.on('disable_hit', function(){
 			document.getElementById('hit').disabled = true;
 		});
 
 		socket.on('continue', function(msg, remaining_charge){
 			document.getElementById('continue').style.display = 'inline';
-			document.getElementById('continue').innerHTML = msg;
-			document.getElementById('remaining_charge').style.display = 'inline';
-			document.getElementById('remaining_charge').innerHTML = " Remaining charge: " + remaining_charge + "!";
+			document.getElementById('continue').innerHTML = msg + " Remaining charge: " + remaining_charge + "!";
 
 			countdown();
 		});
 
-		socket.on('end', function(msg){
+		socket.on('end', function(msg, remaining_charge){
 			document.getElementById('charge').style.display = 'none';
 			document.getElementById('hit').style.display = 'none';
 			document.getElementById('defend').style.display = 'none';
@@ -83,7 +79,7 @@
 			document.getElementById('playagain').style.display = 'inline';
 			document.getElementById('leave').style.display = 'inline';
 			document.getElementById('end').style.display = 'inline';
-			document.getElementById('end').innerHTML = msg;
+			document.getElementById('end').innerHTML = msg + " Remaining charge: " + remaining_charge + "!";
 		});
 
 		function enter(){
@@ -105,7 +101,7 @@
 				counter--;
 				if(counter < 0){
 					clearInterval(countdownInterval);
-					socket.emit('select', 'charge');
+					socket.emit('timesup');
 				}
 			}, 1000);
 		}
@@ -129,13 +125,13 @@
 		<button id="unready" onclick="unready()" style="display:none;">
 			Unready
 		</button>
-		<button id="charge" onclick="clearInterval(countdownInterval); socket.emit('select', 'charge')" style="display:none;">
+		<button id="charge" onclick="socket.emit('select', 'charge')" style="display:none;">
 			Charge
 		</button>
-		<button id="hit" onclick="clearInterval(countdownInterval); socket.emit('select', 'hit')" style="display:none;" disabled>
+		<button id="hit" onclick="socket.emit('select', 'hit')" style="display:none;" disabled>
 			Hit
 		</button>
-		<button id="defend" onclick="clearInterval(countdownInterval); socket.emit('select', 'defend')" style="display:none;">
+		<button id="defend" onclick="socket.emit('select', 'defend')" style="display:none;">
 			Defend
 		</button>
 		<button id="playagain" onclick="playagain()" style="display:none;">
@@ -144,7 +140,6 @@
 		<button id="leave" onclick="leave()" style="display:none;">
 			Leave Room
 		</button>
-		<p id="remaining_charge" style="display:none;"></p>
 		<p id="end" style="display:none;"></p>
 		<p id="continue" style="display:none;"></p>
 		<p id="readyMsg" style="display:none;"></p>
