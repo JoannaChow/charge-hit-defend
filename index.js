@@ -19,7 +19,12 @@ function isNewroom(roomname){
 };
 
 function signIn(id){
-	const newuser = { Id: id, Roomname: "", OpponentId: "", Selection: "", Charge: 0 };
+	const newuser = { Id: id, 
+					Roomname: "", 
+					OpponentId: "", 
+					Selection: "", 
+					Charge: 0,
+					Ready: false, };
 	users.push(newuser);
 	console.log(users);
 };
@@ -63,6 +68,12 @@ function checkOut(id){
 	else{
 		rooms[roomIndex].Player2 = "";
 	}
+
+	if(rooms[roomIndex].Player1 == "" && rooms[roomIndex].Player2 == ""){
+		// remove room from array rooms
+		rooms.splice(roomIndex, 1);
+	}
+	console.log(rooms);
 };
 
 function isFull(roomname){
@@ -73,10 +84,20 @@ function isFull(roomname){
 	return false;
 };
 
+function allReady(roomname){
+	const roomIndex = rooms.findIndex(findRoomIndex, roomname);
+	const p1Index = users.findIndex(findUserIndex, rooms[roomIndex].Player1);
+	const p2Index = users.findIndex(findUserIndex, rooms[roomIndex].Player2);
+
+	if(users[p1Index].Ready && users[p2Index].Ready) return true;
+	return false;
+};
+
 function hasCheckedIn(id){
 	const userIndex = users.findIndex(findUserIndex, id);
 	if(users[userIndex].Roomname == "") return false;
 	return true;
+	console.log(rooms);
 };
 
 function removeUser(id){	
@@ -91,6 +112,7 @@ function resetUser(id){
 	users[userIndex].OpponentId = "";
 	users[userIndex].Selection = "";
 	users[userIndex].Charge = 0;
+	users[userIndex].Ready = false;
 };
 
 //--------------------------------------------------------------------
@@ -105,11 +127,11 @@ io.on('connection', function(socket){
 
 	socket.on('disconnect', function(){
 		if(hasCheckedIn(socket.id)) {
-			const userIndex = users.findIndex(findUserIndex, id);
+			const userIndex = users.findIndex(findUserIndex, socket.id);
 			const opponentUser = users[userIndex].OpponentId;
 			checkOut(socket.id);
 			resetUser(opponentUser);
-			io.to(opponentUser).emit('back_to_ready', "opponent player left, wait for other player");
+			io.to(opponentUser).emit('ready', "opponent player left, wait for other player");
 			console.log('user: '+ socket.id +' checked out');
 		}
 		else{
@@ -118,32 +140,69 @@ io.on('connection', function(socket){
 		}
 	});
 
-	socket.on('ready', function(roomname){
-		if(roomname != ""){
-			if(isNewroom(roomname) || !isFull(roomname)){
-				// validated roomname
-				// get in the room
-				checkIn(socket.id, roomname);
-				console.log('user: '+ socket.id +' get in room: ' + roomname);
+	socket.on('back_to_lobby', function(){
+		const userIndex = users.findIndex(findUserIndex, socket.id);
+		const roomname = users[userIndex].Roomname;
+		checkOut(socket.id);
+		resetUser(socket.id);
+		socket.leave(roomname);
+		io.to(socket.id).emit('back_to_lobby', "Left room " + roomname);
+		console.log(`user ${socket.id} left room ${roomname}.`);
+	});
 
+	socket.on('enter', function(roomname){
+		const checkedIn = hasCheckedIn(socket.id);		
+		if(roomname != "" || checkedIn){
+			if(checkedIn || (isNewroom(roomname) || !isFull(roomname))){
+				if(!checkedIn){
+					checkIn(socket.id, roomname);
+				}
+				else{
+					const userIndex = users.findIndex(findUserIndex, socket.id);
+					roomname = users[userIndex].Roomname;
+					resetUser(socket.id);
+				}
+
+				// validated roomname
+				// enter the room
 				socket.join(roomname, function(){
-					if(isFull(roomname)){
-						// 2 players are ready, start game
-						io.to(roomname).emit('start', 'getting start');
-					}
-					else{
-						// wait for another player
-						io.to(socket.id).emit('ready');
-					}
+					io.to(socket.id).emit('in_room', "Please be ready.");
+					console.log(`user ${socket.id} entered room ${roomname}.`)
 				});
 			}
-			// the room is occupied
-			io.to(socket.id).emit('back_to_ready', "Roomname is already used by other players.");
+			else{
+				// the room is occupied
+				io.to(socket.id).emit('back_to_lobby', "Roomname is already used by other players.");
+			}
 		}
 		else{
-			// roomname is not valid
-			io.to(socket.id).emit('back_to_ready', "Roomname cannot be empty!");
+			// toomname is not valid
+			io.to(socket.id).emit('back_to_lobby', "Roomname cannot be empty!");
 		}
+	});
+
+	socket.on('ready', function(){
+		const userIndex = users.findIndex(findUserIndex, socket.id);
+		users[userIndex].Ready = true;
+		const roomname = users[userIndex].Roomname;
+
+		if(isFull(roomname) && allReady(roomname)){
+			// 2 players are ready, start game
+			socket.to(roomname).emit('start');
+			io.to(socket.id).emit('start');
+			console.log(`In room ${roomname}, user ${socket.id} started the game.`);
+		}
+		else{
+			// wait for another player
+			io.to(socket.id).emit('ready', 'wait for the other roomplayer get ready!');
+			console.log(`In room ${roomname}, user ${socket.id} wait for the other player.`);
+		}
+	});
+
+	socket.on('unready', function(){
+		const userIndex = users.findIndex(findUserIndex, socket.id);
+		users[userIndex].ready = false;
+		io.to(socket.id).emit('in_room', 'Please be ready.');
 	});
 
 	socket.on('select', function(msg){

@@ -4,60 +4,64 @@
 		var socket = io();
 		var countdownInterval;
 
-		socket.on('start', function(msg){
+		socket.on('back_to_lobby', function(msg){
+			// document.getElementById("roomname").value = '';
 			document.getElementById('ready').style.display = 'none';
-			document.getElementById('roomOccupied').style.display = 'none';
-			document.getElementById('readyMsg').style.display = 'none';
+			document.getElementById('leave').style.display = 'none';
+			document.getElementById('playagain').style.display = 'none';
+			document.getElementById('end').style.display = 'none';
+			document.getElementById('remaining_charge').style.display = 'none';
+
+			document.getElementById('enter').style.display = 'inline';
+			document.getElementById('roomname').style.display = 'inline';
+			document.getElementById('roomOccupied').innerHTML = msg;
+			document.getElementById('roomOccupied').style.display = 'inline';
+		});
+
+		socket.on('in_room', function(msg){
+			document.getElementById('enter').style.display = 'none';
+			document.getElementById("roomname").value = '';
 			document.getElementById('roomname').style.display = 'none';
+			document.getElementById('roomOccupied').style.display = 'none';
+			document.getElementById('unready').style.display = 'none';
+			document.getElementById('playagain').style.display = 'none';
+			document.getElementById('end').style.display = 'none';
+			document.getElementById('remaining_charge').style.display = 'none';
+
+			document.getElementById('ready').style.display = 'inline';
+			document.getElementById('leave').style.display = 'inline';
+			document.getElementById('readyMsg').innerHTML = msg;
+			document.getElementById('readyMsg').style.display = 'inline';
+		});
+
+		socket.on('ready', function(msg){	
+			document.getElementById('ready').style.display = 'none';
+			document.getElementById('leave').style.display = 'none';
+
+			document.getElementById('readyMsg').innerHTML = msg;
+			document.getElementById('readyMsg').style.display = 'inline';
+			document.getElementById('unready').style.display = 'inline';
+		});
+
+		socket.on('start', function(){
+			document.getElementById('ready').style.display = 'none';
+			document.getElementById('leave').style.display = 'none';
+			document.getElementById('unready').style.display = 'none';
+			document.getElementById('readyMsg').style.display = 'none';
 
 			document.getElementById('charge').style.display = 'inline';
 			document.getElementById('hit').style.display = 'inline';
 			document.getElementById('defend').style.display = 'inline';
 			document.getElementById('countdown').style.display = 'inline';
-			// console.log('server sent me ' + msg);
 			countdown();
-		});
-
-		socket.on('back_to_ready', function(msg){
-			document.getElementById('charge').style.display = 'none';
-			document.getElementById('hit').style.display = 'none';
-			document.getElementById('defend').style.display = 'none';
-			document.getElementById('end').style.display = 'none';
-			document.getElementById('continue').style.display = 'none';
-			document.getElementById('remaining_charge').style.display = 'none';
-			document.getElementById('readyMsg').style.display = 'none';
-			document.getElementById("roomname").value = '';
-			document.getElementById('roomOccupied').style.display = 'none';
-			document.getElementById('countdown').style.display = 'none';
-			
-			document.getElementById('ready').style.display = 'inline';
-			document.getElementById('roomname').style.display = 'inline';
-			
-			document.getElementById('roomOccupied').innerHTML = msg;
-			document.getElementById('roomOccupied').style.display = 'inline';
-			// console.log('server sent me ' + msg);
 		});
 
 		socket.on('enable_hit', function(msg){
 			document.getElementById('hit').disabled = false;
-			// console.log('server sent me ' + msg);
 		});
 
 		socket.on('disable_hit', function(msg){
 			document.getElementById('hit').disabled = true;
-			// console.log('server sent me ' + msg);
-		});
-
-		socket.on('end', function(msg){
-			document.getElementById('charge').style.display = 'none';
-			document.getElementById('hit').style.display = 'none';
-			document.getElementById('defend').style.display = 'none';
-			document.getElementById('continue').style.display = 'none';
-			document.getElementById('countdown').style.display = 'none';
-
-			document.getElementById('end').style.display = 'inline';
-			document.getElementById('end').innerHTML = msg;
-			// console.log('server sent me ' + msg);
 		});
 
 		socket.on('continue', function(msg, remaining_charge){
@@ -65,19 +69,33 @@
 			document.getElementById('continue').innerHTML = msg;
 			document.getElementById('remaining_charge').style.display = 'inline';
 			document.getElementById('remaining_charge').innerHTML = " Remaining charge: " + remaining_charge + "!";
-			// console.log('server sent me ' + msg);
+
 			countdown();
 		});
 
-		socket.on('ready', function(){
-			document.getElementById('roomOccupied').style.display = 'none';
+		socket.on('end', function(msg){
+			document.getElementById('charge').style.display = 'none';
+			document.getElementById('hit').style.display = 'none';
+			document.getElementById('defend').style.display = 'none';
+			document.getElementById('countdown').style.display = 'none';
+			document.getElementById('continue').style.display = 'none';
 
-			document.getElementById('readyMsg').innerHTML = "wait for the other roomplayer get ready!";
-			document.getElementById('readyMsg').style.display = 'inline';
+			document.getElementById('playagain').style.display = 'inline';
+			document.getElementById('leave').style.display = 'inline';
+			document.getElementById('end').style.display = 'inline';
+			document.getElementById('end').innerHTML = msg;
 		});
 
+		function enter(){
+			socket.emit('enter', document.getElementById("roomname").value);
+		}
+
 		function ready(){
-			socket.emit('ready', document.getElementById("roomname").value);
+			socket.emit('ready');
+		}
+
+		function unready(){
+			socket.emit('unready');
 		}
 
 		function countdown(){
@@ -91,11 +109,25 @@
 				}
 			}, 1000);
 		}
+
+		function playagain(){
+			socket.emit('enter');
+		}
+
+		function leave(){
+			socket.emit('back_to_lobby');
+		}
 	</script>
 	<body>
 		<input type="text" id="roomname" name="Room name">
-		<button id="ready" onclick="ready()">
+		<button id="enter" onclick="enter()">
+			Enter
+		</button>
+		<button id="ready" onclick="ready()" style="display:none;">
 			Ready
+		</button>
+		<button id="unready" onclick="unready()" style="display:none;">
+			Unready
 		</button>
 		<button id="charge" onclick="clearInterval(countdownInterval); socket.emit('select', 'charge')" style="display:none;">
 			Charge
@@ -105,6 +137,12 @@
 		</button>
 		<button id="defend" onclick="clearInterval(countdownInterval); socket.emit('select', 'defend')" style="display:none;">
 			Defend
+		</button>
+		<button id="playagain" onclick="playagain()" style="display:none;">
+			Play Again
+		</button>
+		<button id="leave" onclick="leave()" style="display:none;">
+			Leave Room
 		</button>
 		<p id="remaining_charge" style="display:none;"></p>
 		<p id="end" style="display:none;"></p>
