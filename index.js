@@ -160,7 +160,9 @@ io.on('connection', function(socket){
 				else{
 					const userIndex = users.findIndex(findUserIndex, socket.id);
 					roomname = users[userIndex].Roomname;
+					const opponentId = users[userIndex].OpponentId;
 					resetUser(socket.id);
+					users[userIndex].OpponentId = opponentId;
 				}
 
 				// validated roomname
