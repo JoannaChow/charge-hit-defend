@@ -201,7 +201,7 @@ io.on('connection', function(socket){
 
 	socket.on('unready', function(){
 		const userIndex = users.findIndex(findUserIndex, socket.id);
-		users[userIndex].ready = false;
+		users[userIndex].Ready = false;
 		io.to(socket.id).emit('in_room', 'Please be ready.');
 	});
 
@@ -234,6 +234,8 @@ io.on('connection', function(socket){
 					else if(users[p2Index].Selection == "hit"){
 						users[p2Index].Charge--;
 						if(users[p2Index].Charge == 0) io.to(opponentId).emit('disable_hit');
+						users[p1Index].Ready = false;
+						users[p2Index].Ready = false;
 						io.to(socket.id).emit('end', 'Opponent hit, you lose.', users[p1Index].Charge);
 						io.to(opponentId).emit('end', 'Opponent charged, you win.', users[p2Index].Charge);
 					}
@@ -250,6 +252,8 @@ io.on('connection', function(socket){
 					if(users[p2Index].Selection == "charge"){
 						users[p2Index].Charge++;
 						if(users[p2Index].Charge >= 1) io.to(opponentId).emit('enable_hit');
+						users[p1Index].Ready = false;
+						users[p2Index].Ready = false;
 						io.to(socket.id).emit('end', 'Opponent charged, you win.', users[p1Index].Charge);
 						io.to(opponentId).emit('end', 'Opponent hit, you lose.', users[p2Index].Charge);
 					}
