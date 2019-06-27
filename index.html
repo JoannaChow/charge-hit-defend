@@ -1,11 +1,14 @@
 <html>
 	<script src="/socket.io/socket.io.js"></script>
 	<script>
-		var socket = io();
-		var countdownInterval;
+		let socket = io();
+		let counter = 5;
+		let selection = 'charge';
 
 		socket.on('back_to_lobby', function(msg){
 			document.getElementById('ready').style.display = 'none';
+			document.getElementById('readyMsg').style.display = 'none';
+			document.getElementById('unready').style.display = 'none';
 			document.getElementById('leave').style.display = 'none';
 			document.getElementById('playagain').style.display = 'none';
 			document.getElementById('end').style.display = 'none';
@@ -95,15 +98,21 @@
 		}
 
 		function countdown(){
-			var counter = 5;
-			countdownInterval = setInterval(function(){
+			let countdownInterval = setInterval(function(){
 				document.getElementById("countdown").innerHTML = "Timer: " + counter + "! Select next step!";
 				counter--;
 				if(counter < 0){
 					clearInterval(countdownInterval);
+					socket.emit('select', selection);
 					socket.emit('timesup');
+					counter = 5; // reset counter
+					selection = 'charge'; // reset to default move
 				}
 			}, 1000);
+		}
+
+		function select(move){
+			selection = move;
 		}
 
 		function playagain(){
@@ -125,13 +134,13 @@
 		<button id="unready" onclick="unready()" style="display:none;">
 			Unready
 		</button>
-		<button id="charge" onclick="socket.emit('select', 'charge')" style="display:none;">
+		<button id="charge" onclick="select('charge')" style="display:none;">
 			Charge
 		</button>
-		<button id="hit" onclick="socket.emit('select', 'hit')" style="display:none;" disabled>
+		<button id="hit" onclick="select('hit')" style="display:none;" disabled>
 			Hit
 		</button>
-		<button id="defend" onclick="socket.emit('select', 'defend')" style="display:none;">
+		<button id="defend" onclick="select('defend')" style="display:none;">
 			Defend
 		</button>
 		<button id="playagain" onclick="playagain()" style="display:none;">
